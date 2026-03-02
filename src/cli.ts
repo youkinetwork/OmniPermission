@@ -28,7 +28,7 @@ export const registerOmniCli = (api: OpenClawPluginApi) => {
           console.log("\n" + "=".repeat(50));
           console.log("📂 OMNIPERMISSION CONFIGURATION");
           console.log("-".repeat(50));
-          console.log(`🔑 PUBLIC KEY:\n${keyContent.trim() || "Empty"}`);
+          console.log(`🔑 KEY:\n${keyContent.trim() || "Empty"}`);
           console.log("-".repeat(50));
           console.log(
             `🚫 BLACKLISTED SKILLS: ${blacklist.length > 0 ? blacklist.join(", ") : "None (Pass-through mode)"}`,
@@ -39,7 +39,7 @@ export const registerOmniCli = (api: OpenClawPluginApi) => {
       // --- COMMAND: SET KEY ---
       omni
         .command("set-key")
-        .description("Paste and save your OmniPersona public key")
+        .description("Paste and save your OmniPersona key")
         .action(async () => {
           const rl = readline.createInterface({
             input: process.stdin,
@@ -47,7 +47,7 @@ export const registerOmniCli = (api: OpenClawPluginApi) => {
             terminal: true,
           });
 
-          console.log("Paste your Public Key below (End with -----END PUBLIC KEY-----):");
+          console.log("Paste your Public Key below:");
 
           const lines: string[] = [];
           rl.on("line", async (line) => {
@@ -57,7 +57,7 @@ export const registerOmniCli = (api: OpenClawPluginApi) => {
               const keyPath = getKeyPath(api);
               await fs.mkdir(path.dirname(keyPath), { recursive: true });
               await fs.writeFile(keyPath, publicKey, "utf-8");
-              console.log(`\n✅ Public Key successfully saved to: ${keyPath}`);
+              console.log(`\n✅ Key successfully saved to: ${keyPath}`);
               rl.close();
             }
           });
@@ -127,6 +127,6 @@ export const registerOmniCli = (api: OpenClawPluginApi) => {
           rl.close();
         });
     },
-    { commands: ["omni-permission"] },
+    { commands: ["omnipermission"] },
   );
 };

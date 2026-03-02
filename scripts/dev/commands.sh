@@ -16,7 +16,7 @@ pnpm dev --dev logs
 pnpm dev --dev plugins list
 
 # Install the plugin
-pnpm dev --dev plugins install --link ./extensions/omni-permission
+pnpm dev --dev plugins install --link ./extensions/omnipermission
 
 # Run the web dashboard
 pnpm dev --dev dashboard
@@ -28,7 +28,7 @@ pnpm dev --dev channels add
 pnpm dev --dev plugins enable slack
 
 # Necessary for enabling hooks
-pnpm dev --dev config set plugins.allow "[\"omni-permission\"]"
+pnpm dev --dev config set plugins.allow "[\"omnipermission\"]"
 
 
 pnpm dev --dev config set agents.defaults.model "ollama/qwen2.5:1.5b"
@@ -39,11 +39,11 @@ pnpm dev --dev configure
 
 pnpm dev --dev doctor
 
-pnpm dev --dev omni-permission set-key
-pnpm dev --dev omni-permission blacklist-tools
-pnpm dev --dev omni-permission clear-blacklist
+pnpm dev --dev omnipermission set-key
+pnpm dev --dev omnipermission blacklist-tools
+pnpm dev --dev omnipermission clear-blacklist
 
-pnpm dev --dev omni-permission status
+pnpm dev --dev omnipermission status
 
 pnpm dev --dev skills list
 

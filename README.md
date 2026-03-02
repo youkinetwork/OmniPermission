@@ -1,0 +1,92 @@
+# OmniPermission Plugin for OpenClaw
+
+**OmniPermission** is a security-first plugin that places a "Human-in-the-Loop" gatekeeper between the AI and high-risk actions. It pauses sensitive plugin actions (like Slack, Telegram, or GitHub) and sends a **Push Notification** to your mobile device via OmniPersona for approval.
+
+---
+
+## 🚀 Installation & Setup
+
+### 1. Install & Enable
+
+Run the following commands to download and activate the plugin within your OpenClaw environment:
+
+```bash
+# Install the plugin
+openclaw plugins install omnipermission
+
+# Enable the plugin
+openclaw plugins enable omnipermission
+
+# Authorize the plugin to use lifecycle hooks (Necessary)
+openclaw config set plugins.allow "[\"omnipermission\"]"
+
+```
+
+### 2. Restart the Gateway
+
+**Crucial:** For the hooks and security authorization to take effect, you must restart the OpenClaw gateway:
+
+```bash
+openclaw gateway restart
+
+```
+
+### 3. Connect to OmniPersona Mobile
+
+The plugin connects to your mobile app using a Public Key.
+
+1. **Download the app:**
+* [Download on the App Store](https://www.google.com/search?q=%23)
+* [Get it on Google Play](https://www.google.com/search?q=%23)
+
+
+2. **Copy your Key:** Find your unique Public Key on the **Home Page** of the OmniPersona mobile app.
+3. **Link it:** Run the following command and paste your key when prompted:
+
+```bash
+openclaw omnipermission set-key
+
+```
+
+---
+
+## 🛠️ Security Configuration
+
+By default, all tools work without permission. You choose exactly what to control.
+
+### Intercept Tools
+
+Specify which skills/plugins you want to gatekeep. If a skill is on this list, the agent cannot use it without your mobile consent.
+
+```bash
+openclaw omnipermission blacklist-tools
+
+```
+
+*Example input: `slack, telegram, github*`
+
+### View Configuration
+
+Check your saved key and your currently active blacklist.
+
+```bash
+openclaw omnipermission status
+
+```
+
+### Reset Protection
+
+Wipe the blacklist completely to allow all plugins to run freely.
+
+```bash
+openclaw omnipermission clear-blacklist
+
+```
+
+---
+
+## 🛡️ How it Works
+
+1. **Interception**: The plugin monitors the `before_tool_call` hook for any skill in your blacklist.
+2. **Mobile Alert**: The agent's **Intent** and **Parameters** are sent to your phone.
+3. **Approval**: The agent remains paused until you tap **Approve** in the OmniPersona app.

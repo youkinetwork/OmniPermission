@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+.pnpm-debug.log*
+
+# Build output
+dist/
+
+# Local OpenClaw state and keys (Crucial for your plugin!)
+omni_key.txt
+.openclaw-dev/
+storage/
+
+# Logs and system files
+*.log
+.DS_Store

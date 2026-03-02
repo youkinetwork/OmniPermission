@@ -1,0 +1,13 @@
+{
+  "id": "omnipermission",
+  "name": "OmniPermission Plugin",
+  "version": "1.0.0",
+  "description": "Activity tracking for Gateway hooks.",
+  "entry": "./index.ts",
+  "capabilities": ["hooks"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

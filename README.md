@@ -31,7 +31,7 @@ openclaw gateway restart
 
 ```
 
-### 3. Connect to OmniPersona Mobile
+### 3. Connect to OmniPersona
 
 The plugin connects to your mobile app using a Public Key.
 
@@ -63,7 +63,7 @@ openclaw omnipermission blacklist-tools
 
 ```
 
-*Example input: `slack, telegram, github*`
+Example input: `slack, telegram, github, message`
 
 ### View Configuration
 

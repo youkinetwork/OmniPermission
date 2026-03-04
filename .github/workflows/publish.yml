@@ -42,7 +42,7 @@ jobs:
           git push origin HEAD:main
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Publish to NPM
         run: npm publish --provenance

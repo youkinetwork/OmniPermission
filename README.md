@@ -67,7 +67,7 @@ Example input: `slack, telegram, github, message`
 
 ### View Configuration
 
-Check your saved key and your currently active blacklist.
+Check your saved key, your active blacklist, and the current backend environment.
 
 ```bash
 openclaw omnipermission status
@@ -80,6 +80,30 @@ Wipe the blacklist completely to allow all plugins to run freely.
 
 ```bash
 openclaw omnipermission clear-blacklist
+
+```
+
+---
+
+## 🧪 Environment Management
+
+If you are a developer testing new features or using a staging environment, you can toggle the backend target. This setting is stored in the plugin's local state.
+
+### Enable Dev Mode
+
+Point the plugin to the development backend (`backend.dev.ecrop.de`):
+
+```bash
+openclaw omnipermission enable-dev-mode
+
+```
+
+### Disable Dev Mode (Default)
+
+Switch back to the production backend:
+
+```bash
+openclaw omnipermission disable-dev-mode
 
 ```
 

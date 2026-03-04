@@ -1,6 +1,14 @@
 {
   "name": "omnipermission",
   "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/youkinetwork/OmniPermission.git"
+  },
+  "bugs": {
+    "url": "https://github.com/youkinetwork/OmniPermission/issues"
+  },
+  "homepage": "https://github.com/youkinetwork/OmniPermission#readme",
   "description": "Gateway activity monitor extension",
   "type": "module",
   "devDependencies": {

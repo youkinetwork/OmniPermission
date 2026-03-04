@@ -41,9 +41,6 @@ jobs:
           # Push specifically to the protected main branch
           git push origin HEAD:main
 
-      - name: Install dependencies
-        run: npm install
-
       - name: Publish to NPM
         run: npm publish --provenance
         env:

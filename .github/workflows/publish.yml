@@ -17,7 +17,6 @@ jobs:
         with:
           ref: main 
           fetch-depth: 0
-          # This tells the action to use your Admin rights
           token: ${{ secrets.GH_PAT }} 
 
       - name: Setup Node.js
@@ -26,20 +25,35 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Update package.json version from Tag
+      - name: Sync Versions (package.json & openclaw.plugin.json)
         run: |
-          # Strip 'v' and update package.json
-          VERSION=${GITHUB_REF_NAME#v}
-          npm version $VERSION --no-git-tag-version
+          NEW_VERSION=${GITHUB_REF_NAME#v}
+          echo "Target version: $NEW_VERSION"
 
-      - name: Commit and Push version bump
+          # Update package.json
+          npm version $NEW_VERSION --no-git-tag-version || echo "package.json already at $NEW_VERSION"
+
+          # Update openclaw.plugin.json using jq
+          if [ -f openclaw.plugin.json ]; then
+            # Create a temp file with the updated version
+            jq ".version = \"$NEW_VERSION\"" openclaw.plugin.json > openclaw.plugin.json.tmp
+            mv openclaw.plugin.json.tmp openclaw.plugin.json
+            echo "Updated openclaw.plugin.json to $NEW_VERSION"
+          fi
+
+      - name: Commit and Push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json
-          git commit -m "chore: bump version to ${GITHUB_REF_NAME}"
-          # Push specifically to the protected main branch
-          git push origin HEAD:main
+          git add package.json openclaw.plugin.json
+          
+          # Only commit if there are actual changes to prevent "nothing to commit" errors
+          if ! git diff --cached --exit-code; then
+            git commit -m "chore: bump version to ${GITHUB_REF_NAME} [skip ci]"
+            git push origin HEAD:main
+          else
+            echo "No version changes detected in files. Skipping push."
+          fi
 
       - name: Publish to NPM
         run: npm publish --provenance

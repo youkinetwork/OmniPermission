@@ -9,13 +9,15 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # Needed to commit changes back to the repo
-      id-token: write # Needed for provenance
+      id-token: write # Needed for provenance (OIDC)
       
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetches all history for tagging/committing
+          # Check out the branch instead of just the tag to avoid "Detached HEAD"
+          ref: main 
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -25,11 +27,11 @@ jobs:
 
       - name: Update package.json version from Tag
         run: |
-          # Strip the 'v' from the tag (e.g., v1.0.5 -> 1.0.5)
+          # Strip the 'v' from the tag (e.g., v1.0.1 -> 1.0.1)
           VERSION=${GITHUB_REF_NAME#v}
           echo "Updating package.json to version $VERSION"
           
-          # Use npm version to update package.json without creating a new git tag
+          # Update version in package.json without creating a new git tag
           npm version $VERSION --no-git-tag-version
 
       - name: Commit and Push version bump
@@ -38,7 +40,8 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add package.json
           git commit -m "chore: bump version to ${GITHUB_REF_NAME}"
-          git push
+          # Push the local update back to the main branch
+          git push origin HEAD:main
 
       - name: Install dependencies
         run: npm ci

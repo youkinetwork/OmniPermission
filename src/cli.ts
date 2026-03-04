@@ -2,7 +2,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as readline from "node:readline";
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
-import { getKeyPath, saveInterceptedTools, getInterceptedTools } from "./storage.ts";
+import { getKeyPath, saveInterceptedTools, getInterceptedTools, saveMode } from "./storage.ts";
 
 export const registerOmniCli = (api: OpenClawPluginApi) => {
   api.registerCli(
@@ -125,6 +125,24 @@ export const registerOmniCli = (api: OpenClawPluginApi) => {
           }
 
           rl.close();
+        });
+
+      // --- COMMAND: ENABLE DEV MODE ---
+      omni
+        .command("enable-dev-mode")
+        .description("Switch OmniPermission to use the DEV backend")
+        .action(async () => {
+          await saveMode(api, "dev");
+          console.log("🛠️  OmniPermission: DEV mode enabled (Stored in state).");
+        });
+
+      // --- COMMAND: DISABLE DEV MODE ---
+      omni
+        .command("disable-dev-mode")
+        .description("Switch OmniPermission to use the PROD backend")
+        .action(async () => {
+          await saveMode(api, "prod");
+          console.log("🚀 OmniPermission: PROD mode enabled (Stored in state).");
         });
     },
     { commands: ["omnipermission"] },

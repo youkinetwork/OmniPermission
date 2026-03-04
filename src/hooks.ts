@@ -1,5 +1,6 @@
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
 import { getSavedKey, getInterceptedTools } from "./storage.ts";
+import { getOmniBackendUrl, formatKey } from "./utils.ts";
 
 export const registerOmniHooks = (api: OpenClawPluginApi) => {
   api.on("before_tool_call", async (event) => {
@@ -14,7 +15,7 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
     // 2. Fetch the Key
     const rawKey = await getSavedKey(api);
 
-    if (!rawKey || rawKey === "NO_KEY_SAVED") {
+    if (!rawKey) {
       api.logger.warn(`[omnipermission] 🛑 Action blocked: Public key is missing.`);
       return {
         block: true,
@@ -23,7 +24,12 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
       };
     }
 
-    const key = rawKey.replace(/\r?\n/g, "\\n");
+    // Use utility to format the key
+    const key = formatKey(rawKey);
+    
+    // Use utility to get the correct URL (dev vs prod based on storage flag)
+    const baseUrl = await getOmniBackendUrl(api);
+
     api.logger.info(`[omnipermission] 🎯 Intercepting tool: ${event.toolName}`);
 
     const requestBody = {
@@ -39,14 +45,11 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
       .forEach((line) => api.logger.info(`[omnipermission] 📤 REQ: ${line}`));
 
     try {
-      const response = await fetch(
-        "https://backend.ecrop.de/ecrop-command/omnipermission/poas",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
-        },
-      );
+      const response = await fetch(baseUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
 
       if (response.status === 201) {
         const responseData = await response.json();
@@ -59,9 +62,9 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
         let approved = false;
         while (!approved) {
           await new Promise((resolve) => setTimeout(resolve, 1000));
-          const pollResponse = await fetch(
-            `https://backend.ecrop.de/ecrop-command/omnipermission/poas/${poaId}`,
-          );
+          
+          // Poll using the dynamic baseUrl
+          const pollResponse = await fetch(`${baseUrl}/${poaId}`);
           const pollData = await pollResponse.json();
 
           if (pollData.status === "APPROVED") {
@@ -78,7 +81,7 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
         return;
       } else {
         const errorData = await response.text();
-        api.logger.error(`[omnipermission] ❌ API Error (${response.status})`);
+        api.logger.error(`[omnipermission] ❌ API Error (${response.status}) at ${baseUrl}`);
         errorData
           .split("\n")
           .forEach((line) => api.logger.error(`[omnipermission] ❌ DATA: ${line}`));

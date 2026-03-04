@@ -24,30 +24,34 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
       };
     }
 
-    // Use utility to format the key
     const key = formatKey(rawKey);
-    
-    // Use utility to get the correct URL (dev vs prod based on storage flag)
     const baseUrl = await getOmniBackendUrl(api);
 
     api.logger.info(`[omnipermission] 🎯 Intercepting tool: ${event.toolName}`);
 
     const requestBody = {
-      contentToApprove: `OpenClaw wants to use this tool:${event.toolName}. Do you approve this?`,
+      contentToApprove: `OpenClaw wants to use this tool: ${event.toolName}. Do you approve this?`,
       extraData: `UNKNOWN`,
-      publicKey: key,
+      publicKey: key, // Kept in body as well for backend redundancy
     };
 
-    // LOG RAW REQUEST (Line by line for Dashboard visibility)
+    // Shared headers for all requests
+    const headers = { 
+      "Content-Type": "application/json",
+      "X-OmniPermission-Secret-Key": key 
+    };
+
+    // LOG RAW REQUEST
     const requestString = JSON.stringify(requestBody, null, 2);
     requestString
       .split("\n")
       .forEach((line) => api.logger.info(`[omnipermission] 📤 REQ: ${line}`));
 
     try {
+      // --- 3. Initial POA Creation ---
       const response = await fetch(baseUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: headers,
         body: JSON.stringify(requestBody),
       });
 
@@ -58,13 +62,16 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
           `[omnipermission] ✅ POA created (ID: ${poaId}). Waiting for mobile approval...`,
         );
 
-        // 4. Polling Loop
+        // --- 4. Polling Loop ---
         let approved = false;
         while (!approved) {
           await new Promise((resolve) => setTimeout(resolve, 1000));
           
-          // Poll using the dynamic baseUrl
-          const pollResponse = await fetch(`${baseUrl}/${poaId}`);
+          const pollResponse = await fetch(`${baseUrl}/${poaId}`, {
+            method: "GET",
+            headers: headers // Header included in polling for auth
+          });
+          
           const pollData = await pollResponse.json();
 
           if (pollData.status === "APPROVED") {
@@ -82,10 +89,6 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
       } else {
         const errorData = await response.text();
         api.logger.error(`[omnipermission] ❌ API Error (${response.status}) at ${baseUrl}`);
-        errorData
-          .split("\n")
-          .forEach((line) => api.logger.error(`[omnipermission] ❌ DATA: ${line}`));
-
         return {
           block: true,
           blockReason: `POA failed with status ${response.status}.`,

@@ -40,7 +40,7 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
 
     try {
       const response = await fetch(
-        "https://backend.dev.ecrop.de/ecrop-command/omnipermission/poas",
+        "https://backend.ecrop.de/ecrop-command/omnipermission/poas",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -60,7 +60,7 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
         while (!approved) {
           await new Promise((resolve) => setTimeout(resolve, 1000));
           const pollResponse = await fetch(
-            `https://backend.dev.ecrop.de/ecrop-command/omnipermission/poas/${poaId}`,
+            `https://backend.ecrop.de/ecrop-command/omnipermission/poas/${poaId}`,
           );
           const pollData = await pollResponse.json();
 

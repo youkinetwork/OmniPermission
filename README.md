@@ -36,8 +36,8 @@ openclaw gateway restart
 The plugin connects to your mobile app using a Public Key.
 
 1. **Download the app:**
-* [Download on the App Store](https://www.google.com/search?q=%23)
-* [Get it on Google Play](https://www.google.com/search?q=%23)
+* [Download on the App Store](https://apps.apple.com/us/app/omnipersona/id6553972082)
+* [Get it on Google Play](https://play.google.com/store/apps/details?id=ai.youki.omni.persona&hl=en)
 
 
 2. **Copy your Key:** Find your unique Public Key on the **Home Page** of the OmniPersona mobile app.

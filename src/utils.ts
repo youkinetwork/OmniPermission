@@ -35,7 +35,6 @@ export async function requestMobileApproval(
   const requestBody = {
     contentToApprove: `OpenClaw wants to use this tool: ${toolName}. Do you approve this?`,
     extraData: `UNKNOWN`,
-    publicKey: key,
   };
 
   try {

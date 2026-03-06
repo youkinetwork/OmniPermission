@@ -2,7 +2,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as readline from "node:readline";
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
-import { getKeyPath, saveInterceptedTools, getInterceptedTools, saveMode } from "./storage.ts";
+import { getKeyPath, saveInterceptedTools, getInterceptedTools, saveMode, saveKey } from "./storage.ts";
 
 export const registerOmniCli = (api: OpenClawPluginApi) => {
   api.registerCli(
@@ -12,10 +12,10 @@ export const registerOmniCli = (api: OpenClawPluginApi) => {
       // --- COMMAND: STATUS ---
       omni
         .command("status")
-        .description("Show current Public Key and blacklisted skills")
+        .description("Show current Secret Key and blacklisted skills")
         .action(async () => {
           const keyPath = getKeyPath(api);
-          let keyContent = "❌ NO KEY SAVED";
+          let keyContent = "❌ NO SECRET KEY SAVED";
 
           try {
             keyContent = await fs.readFile(keyPath, "utf-8");
@@ -28,7 +28,7 @@ export const registerOmniCli = (api: OpenClawPluginApi) => {
           console.log("\n" + "=".repeat(50));
           console.log("📂 OMNIPERMISSION CONFIGURATION");
           console.log("-".repeat(50));
-          console.log(`🔑 KEY:\n${keyContent.trim() || "Empty"}`);
+          console.log(`🔑 SECRET KEY:\n${keyContent.trim() || "Empty"}`);
           console.log("-".repeat(50));
           console.log(
             `🚫 BLACKLISTED SKILLS: ${blacklist.length > 0 ? blacklist.join(", ") : "None (Pass-through mode)"}`,
@@ -39,28 +39,31 @@ export const registerOmniCli = (api: OpenClawPluginApi) => {
       // --- COMMAND: SET KEY ---
       omni
         .command("set-key")
-        .description("Paste and save your OmniPersona key")
+        .description("Paste and save your OmniPersona secret key")
         .action(async () => {
           const rl = readline.createInterface({
             input: process.stdin,
             output: process.stdout,
-            terminal: true,
           });
 
-          console.log("Paste your Public Key below:");
-
-          const lines: string[] = [];
-          rl.on("line", async (line) => {
-            lines.push(line);
-            if (line.includes("-----END PUBLIC KEY-----")) {
-              const publicKey = lines.join("\n").trim();
-              const keyPath = getKeyPath(api);
-              await fs.mkdir(path.dirname(keyPath), { recursive: true });
-              await fs.writeFile(keyPath, publicKey, "utf-8");
-              console.log(`\n✅ Key successfully saved to: ${keyPath}`);
-              rl.close();
-            }
+          // Standard one-line input
+          const uuid = await new Promise<string>((resolve) => {
+            rl.question("Paste your secret key: ", (answer) => {
+              resolve(answer.trim());
+            });
           });
+
+          if (!uuid) {
+            console.log("❌ Error: No secret key provided.");
+            rl.close();
+            return;
+          }
+
+          // Use your storage utility instead of direct fs calls
+          await saveKey(api, uuid);
+
+          console.log(`\n✅ secret key successfully saved`);
+          rl.close();
         });
 
       // --- COMMAND: BLACKLIST TOOLS ---
@@ -133,7 +136,7 @@ export const registerOmniCli = (api: OpenClawPluginApi) => {
         .description("Switch OmniPermission to use the DEV backend")
         .action(async () => {
           await saveMode(api, "dev");
-          console.log("🛠️  OmniPermission: DEV mode enabled (Stored in state).");
+          console.log("🛠️  OmniPermission: DEV mode enabled.");
         });
 
       // --- COMMAND: DISABLE DEV MODE ---
@@ -142,7 +145,7 @@ export const registerOmniCli = (api: OpenClawPluginApi) => {
         .description("Switch OmniPermission to use the PROD backend")
         .action(async () => {
           await saveMode(api, "prod");
-          console.log("🚀 OmniPermission: PROD mode enabled (Stored in state).");
+          console.log("🚀 OmniPermission: PROD mode enabled.");
         });
     },
     { commands: ["omnipermission"] },

@@ -27,6 +27,15 @@ export const saveInterceptedTools = async (api: OpenClawPluginApi, tools: string
   await fs.writeFile(toolsPath, JSON.stringify(tools, null, 2), "utf-8");
 };
 
+/**
+ * Saves the OmniPersona UUID key
+ */
+export const saveKey = async (api: OpenClawPluginApi, key: string) => {
+  const keyPath = getKeyPath(api);
+  await fs.mkdir(path.dirname(keyPath), { recursive: true });
+  await fs.writeFile(keyPath, key, "utf-8");
+};
+
 export const getInterceptedTools = async (api: OpenClawPluginApi): Promise<string[]> => {
   try {
     const data = await fs.readFile(getToolsPath(api), "utf-8");

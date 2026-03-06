@@ -35,7 +35,6 @@ export async function requestMobileApproval(
   const requestBody = {
     contentToApprove: `OpenClaw wants to use this tool: ${toolName}. Do you approve this?`,
     extraData: `UNKNOWN`,
-    publicKey: key,
   };
 
   try {
@@ -52,7 +51,7 @@ export async function requestMobileApproval(
     }
 
     const { id: poaId } = await response.json();
-    api.logger.info(`[omnipermission] ✅ POA created (ID: ${poaId}). Waiting for mobile...`);
+    api.logger.info(`[omnipermission] ✅ POA created (ID: ${poaId}). Waiting for OmniPersona approval...`);
 
     // Polling Loop
     while (true) {
@@ -73,8 +72,8 @@ export async function requestMobileApproval(
       }
 
       if (pollData.status === "REJECTED") {
-        api.logger.warn(`[omnipermission] 🛑 Rejected by user via mobile app.`);
-        return { approved: false, reason: "User rejected the action on the mobile app." };
+        api.logger.warn(`[omnipermission] 🛑 Rejected by user via OmniPersona.`);
+        return { approved: false, reason: "User rejected the action on OmniPersona." };
       }
     }
   } catch (error) {

@@ -52,11 +52,15 @@ export const registerOmniCli = (api: OpenClawPluginApi) => {
           const lines: string[] = [];
           rl.on("line", async (line) => {
             lines.push(line);
-            if (line.includes("-----END PUBLIC KEY-----")) {
+            
+            // Fix: Check for a more generic footer to catch "RSA PUBLIC KEY" and "PUBLIC KEY"
+            if (line.match(/-----END (RSA )?PUBLIC KEY-----/)) {
               const publicKey = lines.join("\n").trim();
               const keyPath = getKeyPath(api);
+              
               await fs.mkdir(path.dirname(keyPath), { recursive: true });
               await fs.writeFile(keyPath, publicKey, "utf-8");
+              
               console.log(`\n✅ Key successfully saved to: ${keyPath}`);
               rl.close();
             }

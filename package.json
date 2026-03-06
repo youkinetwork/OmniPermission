@@ -1,6 +1,6 @@
 {
   "name": "omnipermission",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A security-first plugin that places a Human-in-the-Loop gatekeeper between the AI and high-risk actions.",
   "type": "module",
   "license": "MIT",

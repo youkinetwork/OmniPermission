@@ -33,14 +33,14 @@ openclaw gateway restart
 
 ### 3. Connect to OmniPersona
 
-The plugin connects to your mobile app using a Public Key.
+The plugin connects to your mobile app using a secret key.
 
 1. **Download the app:**
 * [Download on the App Store](https://apps.apple.com/us/app/omnipersona/id6553972082)
 * [Get it on Google Play](https://play.google.com/store/apps/details?id=ai.youki.omni.persona&hl=en)
 
 
-2. **Copy your Key:** Find your unique Public Key on the **Home Page** of the OmniPersona mobile app.
+2. **Copy your Key:** Find your unique secret key on the **Home Page** of the OmniPersona mobile app.
 3. **Link it:** Run the following command and paste your key when prompted:
 
 ```bash

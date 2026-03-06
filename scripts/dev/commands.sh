@@ -45,6 +45,8 @@ pnpm dev --dev omnipermission clear-blacklist
 
 pnpm dev --dev omnipermission status
 
+pnpm dev --dev omnipermission enable-dev-mode
+
 pnpm dev --dev skills list
 
 pnpm dev --dev status --claws

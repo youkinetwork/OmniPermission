@@ -24,20 +24,90 @@ export class BinanceHandler {
     return null;
   }
 
+  /**
+   * Parses Python dict literal: {"symbol": "BTCUSDT", "side": "BUY", ...}
+   * Handles string values "key": "val" and resolves str(var) by looking up var.
+   */
+  static parsePythonDict(cmd: string): URLSearchParams | null {
+    // Find the dict that contains "symbol" — could be inside post({...}) or params = {...}
+    const dictMatch = cmd.match(/\{([^{}]*"symbol"\s*:\s*"[^"]*"[^{}]*)\}/);
+    if (!dictMatch) return null;
+
+    const p = new URLSearchParams();
+    const body = dictMatch[1];
+
+    // "key": "literal_value"
+    for (const [, key, val] of body.matchAll(/"(\w+)"\s*:\s*"([^"]+)"/g)) {
+      p.set(key, val);
+    }
+
+    // "key": str(varName) — resolve the variable from the script
+    for (const [, key, varName] of body.matchAll(/"(\w+)"\s*:\s*str\((\w+)\)/g)) {
+      const resolved = this.resolvePyVar(cmd, varName);
+      if (resolved) p.set(key, resolved);
+    }
+
+    // "key": varName (unquoted variable reference, e.g. quantity: qty)
+    for (const [, key, varName] of body.matchAll(/"(\w+)"\s*:\s*([a-zA-Z_]\w*)(?=\s*[,}])/g)) {
+      if (!p.has(key)) {
+        const resolved = this.resolvePyVar(cmd, varName);
+        if (resolved) p.set(key, resolved);
+      }
+    }
+
+    return p.has("symbol") ? p : null;
+  }
+
+  /**
+   * Resolves a Python variable's value from the script.
+   * Handles: qty = "0.00069", spend = round(...), usdt_amount = round(200 * rate, 2)
+   */
+  static resolvePyVar(cmd: string, varName: string): string | null {
+    // Simple string assignment: varName = "value"
+    const strAssign = cmd.match(new RegExp(`${varName}\\s*=\\s*"([^"]+)"`, "m"));
+    if (strAssign) return strAssign[1];
+
+    // Simple numeric: varName = 123.45
+    const numAssign = cmd.match(new RegExp(`${varName}\\s*=\\s*([0-9]+\\.?[0-9]*)(?:\\s|$|,)`, "m"));
+    if (numAssign) return numAssign[1];
+
+    // f-string floor: varName = f"{math.floor(raw/step)*step:.Xf}" — extract raw
+    const fFloor = cmd.match(new RegExp(`${varName}\\s*=\\s*f".*math\\.floor\\(([0-9.]+)/([0-9.]+)\\)`, "m"));
+    if (fFloor) {
+      const raw = parseFloat(fFloor[1]);
+      const step = parseFloat(fFloor[2]);
+      const decimals = (fFloor[2].split(".")[1] ?? "").length;
+      return (Math.floor(raw / step) * step).toFixed(decimals);
+    }
+
+    // round(total * pct, 2) — e.g. spend = round(9992.00 * 0.40, 2)
+    const roundExpr = cmd.match(new RegExp(`${varName}\\s*=\\s*round\\(([0-9.]+)\\s*\\*\\s*([0-9.]+),\\s*\\d+\\)`, "m"));
+    if (roundExpr) return String(Math.round(parseFloat(roundExpr[1]) * parseFloat(roundExpr[2]) * 100) / 100);
+
+    return null;
+  }
+
   static parseParams(cmd: string): URLSearchParams {
+    // 1. Bash: BODY="symbol=...&side=...&..."
     const varMatch = cmd.match(/(?:BODY|QS|QUERY)="([^"]+)"/);
     if (varMatch && varMatch[1].includes("symbol=")) {
-      const resolved = varMatch[1].replace(/\$([A-Z_]+)/g, (_, varName) => {
-        return BinanceHandler.resolveShellVar(cmd, varName) ?? "";
-      });
+      const resolved = varMatch[1].replace(/\$([A-Z_]+)/g, (_, v) =>
+        this.resolveShellVar(cmd, v) ?? ""
+      );
       return new URLSearchParams(resolved);
     }
 
+    // 2. Python dict: {"symbol": "BTCUSDT", "side": "BUY", ...}
+    const pyDict = this.parsePythonDict(cmd);
+    if (pyDict) return pyDict;
+
+    // 3. Literal -d body
     const bodyMatch = cmd.match(/-d\s+"([^"]+)"/);
     if (bodyMatch && bodyMatch[1].includes("symbol=")) {
       return new URLSearchParams(bodyMatch[1]);
     }
 
+    // 4. URL query string
     const urlMatch = cmd.match(/"https?:\/\/[^"]+"/);
     if (urlMatch) {
       const url = new URL(urlMatch[0].replace(/"/g, ""));
@@ -69,13 +139,12 @@ export class BinanceHandler {
     const type     = p.get("type") ?? "?";
     const quantity = p.get("quantity");
     const quoteQty = p.get("quoteOrderQty");
-    const price    = p.get("price"); // only on LIMIT orders
+    const price    = p.get("price");
 
     const amountLine = quantity
       ? `Amount: \`${quantity}\` ${symbol.replace("USDT", "")}`
       : `Spend: \`${quoteQty} USDT\``;
 
-    // For MARKET orders fetch live price; for LIMIT use the order's price
     let priceLine: string;
     if (price) {
       priceLine = `Price: \`${price}\``;

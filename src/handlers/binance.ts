@@ -5,18 +5,44 @@ export class BinanceHandler {
     return cmd.includes("binance.com") && cmd.includes("/api/v3/order");
   }
 
-  static parseParams(cmd: string): URLSearchParams {
-    // The exec command is a shell script. Params live in a variable assignment:
-    // BODY="symbol=DOGEUSDT&side=BUY&type=MARKET&quoteOrderQty=100&timestamp=$TS"
-    // QS="symbol=PEPEUSDT&side=SELL&type=MARKET&quantity=15228658&timestamp=$TS"
-    // The -d "$FULL_BODY" / -d "$QS&signature=$SIG" ref is never expanded.
-    const varMatch = cmd.match(/(?:BODY|QS|QUERY)="([^"]+)"/);
-    if (varMatch && varMatch[1].includes("symbol=")) {
-      // $TS is unexpanded but irrelevant — we only need symbol/side/type/qty
-      return new URLSearchParams(varMatch[1].replace(/\$\w+/g, ""));
+  /**
+   * Tries to resolve a shell variable's value from the script text.
+   * Handles:
+   *   1. Simple assignment:      BTC=0.00069
+   *   2. Python floor pattern:   BTC=$(python3 -c "... raw=0.00069930; step=0.00001 ...")
+   */
+  static resolveShellVar(cmd: string, varName: string): string | null {
+    // 1. Simple numeric assignment: VARNAME=0.00069 or VARNAME=1079
+    const simple = cmd.match(
+      new RegExp(`(?:^|\\n)\\s*${varName}=([0-9]+\\.?[0-9]*)(?:\\s|\\n|$)`, "m")
+    );
+    if (simple) return simple[1];
+
+    // 2. Python floor: VARNAME=$(python3 -c "... raw=X; step=Y ...")
+    const pyFloor = cmd.match(
+      new RegExp(`${varName}=\\$\\(python3[^\\n]*raw=([0-9.]+);\\s*step=([0-9.]+)`, "m")
+    );
+    if (pyFloor) {
+      const raw = parseFloat(pyFloor[1]);
+      const step = parseFloat(pyFloor[2]);
+      const decimals = (pyFloor[2].split(".")[1] ?? "").length;
+      return (Math.floor(raw / step) * step).toFixed(decimals);
     }
 
-    // Fallback: -d with literal value (if command style ever changes)
+    return null;
+  }
+
+  static parseParams(cmd: string): URLSearchParams {
+    const varMatch = cmd.match(/(?:BODY|QS|QUERY)="([^"]+)"/);
+    if (varMatch && varMatch[1].includes("symbol=")) {
+      // Resolve any $VARNAME references before parsing
+      const resolved = varMatch[1].replace(/\$([A-Z_]+)/g, (_, varName) => {
+        return BinanceHandler.resolveShellVar(cmd, varName) ?? "";
+      });
+      return new URLSearchParams(resolved);
+    }
+
+    // Fallback: -d with literal value
     const bodyMatch = cmd.match(/-d\s+"([^"]+)"/);
     if (bodyMatch && bodyMatch[1].includes("symbol=")) {
       return new URLSearchParams(bodyMatch[1]);

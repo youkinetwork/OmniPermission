@@ -6,15 +6,26 @@ export class BinanceHandler {
   }
 
   static parseParams(cmd: string): URLSearchParams {
-    // Params are always in the -d body, NOT in the URL query string
-    // Matches: -d "key=val&..." or -d 'key=val&...'
-    const bodyMatch = cmd.match(/-d\s+["']([^"']+)["']/);
-    if (bodyMatch) return new URLSearchParams(bodyMatch[1]);
+    // The exec command is a shell script. Params live in a variable assignment:
+    // BODY="symbol=DOGEUSDT&side=BUY&type=MARKET&quoteOrderQty=100&timestamp=$TS"
+    // QS="symbol=PEPEUSDT&side=SELL&type=MARKET&quantity=15228658&timestamp=$TS"
+    // The -d "$FULL_BODY" / -d "$QS&signature=$SIG" ref is never expanded.
+    const varMatch = cmd.match(/(?:BODY|QS|QUERY)="([^"]+)"/);
+    if (varMatch && varMatch[1].includes("symbol=")) {
+      // $TS is unexpanded but irrelevant — we only need symbol/side/type/qty
+      return new URLSearchParams(varMatch[1].replace(/\$\w+/g, ""));
+    }
 
-    // Fallback: try URL query string (in case command style changes)
-    const urlMatch = cmd.match(/["']https?:\/\/[^"']+["']/);
+    // Fallback: -d with literal value (if command style ever changes)
+    const bodyMatch = cmd.match(/-d\s+"([^"]+)"/);
+    if (bodyMatch && bodyMatch[1].includes("symbol=")) {
+      return new URLSearchParams(bodyMatch[1]);
+    }
+
+    // Fallback: URL query string
+    const urlMatch = cmd.match(/"https?:\/\/[^"]+"/);
     if (urlMatch) {
-      const url = new URL(urlMatch[0].replace(/["']/g, ""));
+      const url = new URL(urlMatch[0].replace(/"/g, ""));
       if (url.searchParams.has("symbol")) return url.searchParams;
     }
 

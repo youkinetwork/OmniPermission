@@ -19,7 +19,7 @@ export class SlackHandler {
    * @param event The event object containing tool call parameters.
    * @returns A formatted Markdown string for logs or UI.
    */
-  static formatSlackDetails(event: any): string {
+  static formatDetails(event: any): string {
     const params = (event.params as Record<string, unknown>) || {};
     const action = String(params.action ?? "unknown");
     const target = String(params.target ?? "unknown");

@@ -1,6 +1,7 @@
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
 import { Storage } from "./storage.ts";
-import { SlackHandler } from "./handlers/slack.ts"; 
+import { SlackHandler } from "./handlers/slack.ts";
+import { BinanceHandler } from "./handlers/binance.ts";
 import { SupportedTools } from "./models/supported-tools.ts";
 
 
@@ -15,6 +16,8 @@ export class Utils {
   static getToolType(event: any): SupportedTools {
     if (SlackHandler.isEventForSlack(event)) {
       return SupportedTools.slack;
+    } else if (BinanceHandler.isEventForBinance(event)) {
+      return SupportedTools.binance;
     }
     
     return SupportedTools.unsupported;
@@ -27,7 +30,9 @@ export class Utils {
    */
   static getEventApprovalContent(event: any): string {
     if (this.getToolType(event) === SupportedTools.slack) {
-      return SlackHandler.formatSlackDetails(event);
+      return SlackHandler.formatDetails(event);
+    } else if (this.getToolType(event) === SupportedTools.binance) {
+      return BinanceHandler.formatDetails(event);
     }
     
     return "unknown";

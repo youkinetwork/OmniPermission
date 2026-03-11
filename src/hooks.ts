@@ -57,20 +57,6 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
   api.on("before_tool_call", async (event) => {
     const eventToolName: SupportedTools = Utils.getToolType(event);
 
-    // 🔍 Binance Detection (runs for all exec calls)
-    if (event.toolName === "exec") {
-      const cmd = String(event.params?.command ?? "");
-      if (cmd.includes("binance.com")) {
-        const isTrade = cmd.includes("/api/v3/order");
-        const isQuery = cmd.includes("/api/v3/account") || cmd.includes("/api/v3/ticker");
-        api.logger.info(
-          `[omnipermission] 🟡 Binance exec detected — ` +
-            `type: ${isTrade ? "TRADE" : isQuery ? "QUERY" : "OTHER"} | ` +
-            `cmd: ${cmd.slice(0, 120)}...`,
-        );
-      }
-    }
-
     // 1. Blacklist Check
     const interceptedTools = await Storage.getInterceptedTools(api);
     if (!interceptedTools.includes(eventToolName)) {

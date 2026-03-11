@@ -3,5 +3,6 @@
  */
 export enum SupportedTools {
   slack = "slack",
+  binance = "binance",
   unsupported = "unsupported"
 }

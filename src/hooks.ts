@@ -1,6 +1,6 @@
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
-import { getSavedKey, getInterceptedTools } from "./storage.ts";
-import { formatKey, requestMobileApproval } from "./utils.ts";
+import { Storage } from "./storage.ts";
+import { Utils } from "./utils.ts";
 
 export const registerOmniHooks = (api: OpenClawPluginApi) => {
   // HOOK A: Capture the "Why"
@@ -53,30 +53,16 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
       }
     }
 
-    // 🔍 Slack Detection (message tool-based)
-    if (event.toolName === "message") {
-      const params = event.params as Record<string, unknown>;
-      const channel = String(params?.channel ?? "");
-      const target = String(params?.target ?? "");
-
-      if (channel === "slack" || target.startsWith("slack:")) {
-        api.logger.info(
-          `[omnipermission] 💬 Slack message detected — ` +
-          `action: ${params?.action} | target: ${target} | ` +
-          `msg: ${String(params?.message ?? "").slice(0, 80)}...`
-        );
-      }
-    }
 
     // 1. Blacklist Check
-    const interceptedTools = await getInterceptedTools(api);
+    const interceptedTools = await Storage.getInterceptedTools(api);
     if (!interceptedTools.includes(event.toolName)) {
       api.logger.info(`[omnipermission] 🎯 ${event.toolName} is not blacklisted`);
       return;
     }
 
     // 2. Key Validation
-    const rawKey = await getSavedKey(api);
+    const rawKey = await Storage.getSavedKey(api);
     if (!rawKey) {
       api.logger.warn(`[omnipermission] 🛑 Action blocked: Public key is missing.`);
       return {
@@ -85,11 +71,11 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
       };
     }
 
-    const key = formatKey(rawKey);
+    const key = Utils.formatKey(rawKey);
     api.logger.info(`[omnipermission] 🎯 Intercepting tool: ${event.toolName}`);
 
     // 3. Hand off to Utils for API/Polling
-    const result = await requestMobileApproval(api, event.toolName, key);
+    const result = await Utils.requestMobileApproval(api, event.toolName, Utils.getEventApprovalContent(event) ,key);
 
     if (!result.approved) {
       return {

@@ -156,12 +156,19 @@ export class BinanceHandler {
     }
 
     const emoji = side === "BUY" ? "🟢" : "🔴";
-    return [
+
+        return [
       `### ${emoji} Binance Trade About to Execute`,
-      `**${side}** **${symbol}**`,
-      amountLine,
-      priceLine,
-      `Order Type: \`${type}\``,
+      `---`,
+      `| Field | Value |`,
+      `| :--- | :--- |`,
+      `| **Side** | ${side} |`,
+      `| **Symbol** | ${symbol} |`,
+      `| **Amount** | ${amountLine.split(': ')[1] || amountLine} |`,
+      `| **Price** | ${priceLine.split(': ')[1] || priceLine} |`,
+      `| **Type** | \`${type}\` |`,
+      `---`,
+      `**Do you approve this action?**`
     ].join("\n");
   }
 }

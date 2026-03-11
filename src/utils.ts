@@ -12,7 +12,7 @@ export class Utils {
    * Identifies the specific tool category from an event.
    * @returns SupportedTools enum value
    */
-  static getSupportedToolType(event: any): SupportedTools {
+  static getToolType(event: any): SupportedTools {
     if (SlackHandler.isEventForSlack(event)) {
       return SupportedTools.slack;
     }
@@ -26,7 +26,7 @@ export class Utils {
    * Otherwise, returns "unknown".
    */
   static getEventApprovalContent(event: any): string {
-    if (this.getSupportedToolType(event) === SupportedTools.slack) {
+    if (this.getToolType(event) === SupportedTools.slack) {
       return SlackHandler.formatSlackDetails(event);
     }
     

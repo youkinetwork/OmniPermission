@@ -1,6 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
+import { SupportedTools } from "./models/supported-tools.ts"; 
 
 /**
  * Storage class for managing OmniPermission configuration and state files.
@@ -41,8 +42,9 @@ export class Storage {
 
   /**
    * Saves the list of tools that require mobile approval.
+   * Now strictly accepts SupportedTools[].
    */
-  static async saveInterceptedTools(api: OpenClawPluginApi, tools: string[]): Promise<void> {
+  static async saveInterceptedTools(api: OpenClawPluginApi, tools: SupportedTools[]): Promise<void> {
     const toolsPath = this.getToolsPath(api);
     await fs.mkdir(path.dirname(toolsPath), { recursive: true });
     await fs.writeFile(toolsPath, JSON.stringify(tools, null, 2), "utf-8");
@@ -59,12 +61,18 @@ export class Storage {
 
   /**
    * Retrieves the current list of intercepted tools.
+   * Now returns SupportedTools[].
    */
-  static async getInterceptedTools(api: OpenClawPluginApi): Promise<string[]> {
+  static async getInterceptedTools(api: OpenClawPluginApi): Promise<SupportedTools[]> {
     try {
       const data = await fs.readFile(this.getToolsPath(api), "utf-8");
       const parsed = JSON.parse(data);
-      return Array.isArray(parsed) ? parsed : [];
+      
+      // Basic validation to ensure we are returning valid enum values
+      if (Array.isArray(parsed)) {
+        return parsed as SupportedTools[];
+      }
+      return [];
     } catch {
       return [];
     }

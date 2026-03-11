@@ -1,9 +1,9 @@
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
+import { SupportedTools } from "./models/supported-tools.ts";
 import { Storage } from "./storage.ts";
 import { Utils } from "./utils.ts";
 
 export const registerOmniHooks = (api: OpenClawPluginApi) => {
-  // HOOK A: Capture the "Why"
   api.on("llm_output", async (event) => {
     api.logger.warn(`[omnipermission] ${event.model}`);
     api.logger.warn(`[omnipermission] ${event.assistantTexts.join("\n")}`);
@@ -11,23 +11,41 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
     api.logger.warn(`[omnipermission] ${event.provider}`);
     api.logger.warn(`[omnipermission] ${event.runId}`);
     api.logger.warn(`[omnipermission] ${event.sessionId}`);
-    api.logger.warn(`[omnipermission] ${event.usage?.cacheRead} ${event.usage?.cacheWrite} ${event.usage?.input} ${event.usage?.output}`);
+    api.logger.warn(
+      `[omnipermission] ${event.usage?.cacheRead} ${event.usage?.cacheWrite} ${event.usage?.input} ${event.usage?.output}`,
+    );
   });
 
   api.on("before_message_write", (event) => {
     api.logger.warn(`[omnipermission: before_message_write: ${event.message.role}`);
   });
 
-  // Manually defined since PluginHookName isn't exported
+
   const allHooks = [
-    "before_model_resolve", "before_prompt_build", "before_agent_start",
-    "llm_input", "llm_output", "agent_end", "before_compaction",
-    "after_compaction", "before_reset", "message_received",
-    "message_sending", "message_sent", "before_tool_call",
-    "after_tool_call", "tool_result_persist", "before_message_write",
-    "session_start", "session_end", "subagent_spawning",
-    "subagent_delivery_target", "subagent_spawned", "subagent_ended",
-    "gateway_start", "gateway_stop"
+    "before_model_resolve",
+    "before_prompt_build",
+    "before_agent_start",
+    "llm_input",
+    "llm_output",
+    "agent_end",
+    "before_compaction",
+    "after_compaction",
+    "before_reset",
+    "message_received",
+    "message_sending",
+    "message_sent",
+    "before_tool_call",
+    "after_tool_call",
+    "tool_result_persist",
+    "before_message_write",
+    "session_start",
+    "session_end",
+    "subagent_spawning",
+    "subagent_delivery_target",
+    "subagent_spawned",
+    "subagent_ended",
+    "gateway_start",
+    "gateway_stop",
   ];
 
   allHooks.forEach((hookName) => {
@@ -36,8 +54,8 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
     });
   });
 
-
   api.on("before_tool_call", async (event) => {
+    const eventToolName: SupportedTools = Utils.getToolType(event);
 
     // 🔍 Binance Detection (runs for all exec calls)
     if (event.toolName === "exec") {
@@ -47,17 +65,16 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
         const isQuery = cmd.includes("/api/v3/account") || cmd.includes("/api/v3/ticker");
         api.logger.info(
           `[omnipermission] 🟡 Binance exec detected — ` +
-          `type: ${isTrade ? "TRADE" : isQuery ? "QUERY" : "OTHER"} | ` +
-          `cmd: ${cmd.slice(0, 120)}...`
+            `type: ${isTrade ? "TRADE" : isQuery ? "QUERY" : "OTHER"} | ` +
+            `cmd: ${cmd.slice(0, 120)}...`,
         );
       }
     }
 
-
     // 1. Blacklist Check
     const interceptedTools = await Storage.getInterceptedTools(api);
-    if (!interceptedTools.includes(event.toolName)) {
-      api.logger.info(`[omnipermission] 🎯 ${event.toolName} is not blacklisted`);
+    if (!interceptedTools.includes(eventToolName)) {
+      api.logger.info(`[omnipermission] 🎯 ${eventToolName} is not blacklisted`);
       return;
     }
 
@@ -72,10 +89,15 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
     }
 
     const key = Utils.formatKey(rawKey);
-    api.logger.info(`[omnipermission] 🎯 Intercepting tool: ${event.toolName}`);
+    api.logger.info(`[omnipermission] 🎯 Intercepting tool: ${eventToolName}`);
 
     // 3. Hand off to Utils for API/Polling
-    const result = await Utils.requestMobileApproval(api, event.toolName, Utils.getEventApprovalContent(event) ,key);
+    const result = await Utils.requestMobileApproval(
+      api,
+      eventToolName,
+      Utils.getEventApprovalContent(event),
+      key,
+    );
 
     if (!result.approved) {
       return {

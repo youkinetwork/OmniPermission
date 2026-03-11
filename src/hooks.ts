@@ -81,7 +81,7 @@ export const registerOmniHooks = (api: OpenClawPluginApi) => {
     const result = await Utils.requestMobileApproval(
       api,
       eventToolName,
-      Utils.getEventApprovalContent(event),
+      await Utils.getEventApprovalContent(event),
       key,
     );
 

@@ -28,11 +28,11 @@ export class Utils {
    * If the event is Slack-related, it returns the detailed Markdown.
    * Otherwise, returns "unknown".
    */
-  static getEventApprovalContent(event: any): string {
+  static async getEventApprovalContent(event: any): Promise<string> {
     if (this.getToolType(event) === SupportedTools.slack) {
       return SlackHandler.formatDetails(event);
     } else if (this.getToolType(event) === SupportedTools.binance) {
-      return BinanceHandler.formatDetails(event);
+      return await BinanceHandler.formatDetails(event);
     }
     
     return "unknown";

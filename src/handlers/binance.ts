@@ -5,20 +5,12 @@ export class BinanceHandler {
     return cmd.includes("binance.com") && cmd.includes("/api/v3/order");
   }
 
-  /**
-   * Tries to resolve a shell variable's value from the script text.
-   * Handles:
-   *   1. Simple assignment:      BTC=0.00069
-   *   2. Python floor pattern:   BTC=$(python3 -c "... raw=0.00069930; step=0.00001 ...")
-   */
   static resolveShellVar(cmd: string, varName: string): string | null {
-    // 1. Simple numeric assignment: VARNAME=0.00069 or VARNAME=1079
     const simple = cmd.match(
       new RegExp(`(?:^|\\n)\\s*${varName}=([0-9]+\\.?[0-9]*)(?:\\s|\\n|$)`, "m")
     );
     if (simple) return simple[1];
 
-    // 2. Python floor: VARNAME=$(python3 -c "... raw=X; step=Y ...")
     const pyFloor = cmd.match(
       new RegExp(`${varName}=\\$\\(python3[^\\n]*raw=([0-9.]+);\\s*step=([0-9.]+)`, "m")
     );
@@ -35,20 +27,17 @@ export class BinanceHandler {
   static parseParams(cmd: string): URLSearchParams {
     const varMatch = cmd.match(/(?:BODY|QS|QUERY)="([^"]+)"/);
     if (varMatch && varMatch[1].includes("symbol=")) {
-      // Resolve any $VARNAME references before parsing
       const resolved = varMatch[1].replace(/\$([A-Z_]+)/g, (_, varName) => {
         return BinanceHandler.resolveShellVar(cmd, varName) ?? "";
       });
       return new URLSearchParams(resolved);
     }
 
-    // Fallback: -d with literal value
     const bodyMatch = cmd.match(/-d\s+"([^"]+)"/);
     if (bodyMatch && bodyMatch[1].includes("symbol=")) {
       return new URLSearchParams(bodyMatch[1]);
     }
 
-    // Fallback: URL query string
     const urlMatch = cmd.match(/"https?:\/\/[^"]+"/);
     if (urlMatch) {
       const url = new URL(urlMatch[0].replace(/"/g, ""));
@@ -58,7 +47,20 @@ export class BinanceHandler {
     return new URLSearchParams();
   }
 
-  static formatDetails(event: any): string {
+  static async fetchMarketPrice(symbol: string): Promise<string | null> {
+    try {
+      const res = await fetch(
+        `https://demo-api.binance.com/api/v3/ticker/price?symbol=${symbol}`,
+        { headers: { "User-Agent": "binance-spot/1.0.1 (Skill)" } }
+      );
+      const json = await res.json() as { price?: string };
+      return json.price ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  static async formatDetails(event: any): Promise<string> {
     const cmd = String(event.params?.command ?? "");
     const p = BinanceHandler.parseParams(cmd);
 
@@ -67,15 +69,22 @@ export class BinanceHandler {
     const type     = p.get("type") ?? "?";
     const quantity = p.get("quantity");
     const quoteQty = p.get("quoteOrderQty");
-    const price    = p.get("price");
+    const price    = p.get("price"); // only on LIMIT orders
 
     const amountLine = quantity
       ? `Amount: \`${quantity}\` ${symbol.replace("USDT", "")}`
       : `Spend: \`${quoteQty} USDT\``;
 
-    const priceLine = price
-      ? `Price: \`${price}\``
-      : `Price: \`MARKET\``;
+    // For MARKET orders fetch live price; for LIMIT use the order's price
+    let priceLine: string;
+    if (price) {
+      priceLine = `Price: \`${price}\``;
+    } else {
+      const marketPrice = await BinanceHandler.fetchMarketPrice(symbol);
+      priceLine = marketPrice
+        ? `Price: \`${marketPrice}\` _(live market)_`
+        : `Price: \`MARKET\``;
+    }
 
     const emoji = side === "BUY" ? "🟢" : "🔴";
     return [

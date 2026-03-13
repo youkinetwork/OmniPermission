@@ -19,7 +19,6 @@ openclaw plugins enable omnipermission
 
 # Authorize the plugin to use lifecycle hooks (Necessary)
 openclaw config set plugins.allow "[\"omnipermission\"]"
-
 ```
 
 ### 2. Restart the Gateway
@@ -28,7 +27,6 @@ openclaw config set plugins.allow "[\"omnipermission\"]"
 
 ```bash
 openclaw gateway restart
-
 ```
 
 ### 3. Connect to OmniPersona
@@ -45,7 +43,6 @@ The plugin connects to your mobile app using a secret key.
 
 ```bash
 openclaw omnipermission set-key
-
 ```
 
 ---
@@ -60,7 +57,6 @@ Specify which skills/plugins you want to gatekeep. If a skill is on this list, t
 
 ```bash
 openclaw omnipermission blacklist-tools
-
 ```
 
 Example input: `slack, telegram, github, message`
@@ -71,7 +67,6 @@ Check your saved key, your active blacklist, and the current backend environment
 
 ```bash
 openclaw omnipermission status
-
 ```
 
 ### Reset Protection
@@ -80,7 +75,6 @@ Wipe the blacklist completely to allow all plugins to run freely.
 
 ```bash
 openclaw omnipermission clear-blacklist
-
 ```
 
 ---
@@ -95,7 +89,6 @@ Point the plugin to the development backend (`backend.dev.ecrop.de`):
 
 ```bash
 openclaw omnipermission enable-dev-mode
-
 ```
 
 ### Disable Dev Mode (Default)
@@ -104,7 +97,6 @@ Switch back to the production backend:
 
 ```bash
 openclaw omnipermission disable-dev-mode
-
 ```
 
 ---
@@ -114,3 +106,11 @@ openclaw omnipermission disable-dev-mode
 1. **Interception**: The plugin monitors the `before_tool_call` hook for any skill in your blacklist.
 2. **Mobile Alert**: The agent's **Intent** and **Parameters** are sent to your phone.
 3. **Approval**: The agent remains paused until you tap **Approve** in the OmniPersona app.
+
+
+## 🛠️ How to Develop
+
+OmniPermission does not support every tool, but provides the scaffolding required for adding new tools. In case you want to intercept a specific operation, 
+follow our [How to Extend](https://github.com/youkinetwork/OmniPermission/blob/main/docs/extend.md) guide.
+
+Additionally, you can find the list of supported tools [here](https://github.com/youkinetwork/OmniPermission/blob/main/docs/tools.md).

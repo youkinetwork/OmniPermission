@@ -80,7 +80,7 @@ export const registerOmniCli = (api: OpenClawPluginApi) => {
           const availableOptions = Object.values(SupportedTools).filter(
             (t) => t !== SupportedTools.unsupported
           );
-          const wikiLink = "https://github.com/your-repo/omni-permission/wiki/Supported-Tools";
+          const wikiLink = "https://github.com/youkinetwork/OmniPermission/blob/main/docs/tools.md";
 
           // 2. Print initial guidance
           console.log(`\n--- 🛠️  OmniPermission Configuration ---`);
